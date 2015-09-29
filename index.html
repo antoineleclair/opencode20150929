@@ -41,7 +41,7 @@ class: center, middle
 # Antoine Leclair
 
  * Freelance
- * http://antoineleclair.ca
+ * https://github.com/antoineleclair
 ---
 
 # Docker
@@ -69,7 +69,7 @@ $ docker-compose scale web=2 worker=3
 
 ---
 
-# Exemples
+# Demo
 
 __`docker-compose.yml`__
 
@@ -364,6 +364,16 @@ $ docker-compose run web bash
 
 ---
 
+class: middle
+
+```bash
+$ docker-compose -f staging.yaml up -d
+```
+
+ * `-f` permet de choisir le fichier de config.
+
+---
+
 # Mon Expérience
 
  * Vraiment nécessaire, utilisez-le.
@@ -375,7 +385,29 @@ $ docker-compose run web bash
 
 # _Cons_
 
- * TODO
+ * Docker roule en root, donc les fichier créés ont `root root` comme user/group.
+```bash
+chown antoine -R alembic
+chgrp antoine -R alembic
+```
+ * Espace sur le disque: `docker images`.
+ * Quand on utilise `docker-compose up`, si l'app web plante, tout se fait arrêter.
+ * `docker-compose run web ...`, long à taper.
+
+---
+
+class: center, middle
+
+# Questions?
+
+---
+
+# Extras
+
+ * Fig
+ * env_file: https://docs.docker.com/compose/yml/#env-file
+ * extends: https://docs.docker.com/compose/extends/
+ * Déployer sur plusieurs serveur: Docker Machine, etc.
 
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
