@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Docker Compose</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; max-height: 100%}
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code,
+      .remark-inline-code {
+        font-family: 'Ubuntu Mono';
+        background-color: rgb(240, 240, 240);
+        overflow: auto;
+        max-height: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Docker Compose
+
+---
+
+# Docker Compose
+
+ * Façon facile de commencer à utiliser Docker
+ * Rôle similaire à Vagrant
+
+---
+
+# Antoine Leclair
+
+ * Freelance
+ * http://antoineleclair.ca
+---
+
+# Docker
+
+ * Système de container
+ * Prison pour application
+ * Directement sur le kernel Linux
+ * Pas besoin de virtualisation (VirtualBox, Xen, KVM): bare metal.
+
+---
+
+# Cas typiques d'utilisation
+
+ * Travailler sur des projet sans installer toutes les dépendances:
+    * Redis
+    * PostgeSQL
+    * Python 3.4
+    * etc.
+ * Déployer une app sur un nouveau serveur pour faire une démo.
+ * Déployer en prod et _scaler_ à la Heroku:
+
+```bash
+$ docker-compose scale web=2 worker=3
+```
+
+---
+
+# Exemples
+
+__`docker-compose.yml`__
+
+```yaml
+db:
+  image: postgres:9.3
+  ports:
+    - "5432:5432"
+web:
+  build: .
+  command: pserve dev.ini --reload
+  ports:
+    - "6543:6543"
+  links:
+    - db
+```
+
+```bash
+$ docker-compose up
+```
+
+```bash
+$ docker-compose run web initialize_ex1_db dev.ini
+```
+
+---
+
+class: center, middle
+
+# Questions?
+
+---
+
+# Dockerfile
+
+```bash
+FROM python:3.4
+ADD . /code
+WORKDIR /code
+RUN python setup.py develop
+EXPOSE 6543
+```
+
+---
+
+# Exemple
+
+__`docker-compose.yml`__
+
+```yaml
+db:
+  image: postgres:9.3
+  ports:
+    - "5432:5432"
+redis:
+  image: redis
+  ports:
+    - "6379:6379"
+fakesmtp:
+  build: fakesmtp/.
+  ports:
+    - "1025:1025"
+    - "1026:1026"
+mrimock:
+  build: mrimock/.
+  command: pserve config.ini --reload
+  ports:
+    - "6566:6566"
+  volumes:
+    - ./mrimock:/code
+  environment:
+    PYTHONUNBUFFERED: 0
+worker:
+  build: .
+  command: python -m urlworker urlworker/dev.ini
+  volumes:
+  - .:/code
+  env_file: dev.env
+  environment:
+    PYTHONUNBUFFERED: 0
+  links:
+    - db
+    - redis
+    - fakesmtp
+    - mrimock
+  ports:
+    - "9181:9181"
+web:
+  build: .
+  working_dir: /code/urlweb
+  command: pserve dev.ini --reload
+  ports:
+  - "6543:6543"
+  volumes:
+  - .:/code
+  env_file: dev.env
+  environment:
+    PYTHONUNBUFFERED: 0
+  links:
+    - db
+    - redis
+    - fakesmtp
+    - mrimock
+```
+
+---
+
+# Exemple
+
+__`docker-compose.yml`__
+
+```yaml
+db:
+  image: mysql
+  environment:
+    MYSQL_ROOT_PASSWORD: dev
+    MYSQL_DATABASE: tly
+  ports:
+    - "3306:3306"
+redis:
+  image: redis
+  ports:
+    - "6379:6379"
+messenger:
+  build: node_app
+  volumes:
+  - .:/code
+  command: node node_app/app.js -p 8000
+  ports:
+    - "8000:8000"
+web:
+  build: .
+  command: pserve development.ini --reload
+  ports:
+  - "6543:6543"
+  volumes:
+  - .:/code
+  environment:
+    PYTHONUNBUFFERED: 0
+  links:
+    - db
+    - redis
+    - messenger
+worker:
+  build: .
+  command: python tlycelery.py development.ini -A tly.tasks worker --loglevel=INFO
+  volumes:
+  - .:/code
+  environment:
+    PYTHONUNBUFFERED: 0
+    C_FORCE_ROOT: 1
+  links:
+    - db
+    - redis
+    - messenger
+```
+
+---
+
+class: center, middle
+
+# Commandes
+
+---
+
+class: middle
+
+```bash
+$ docker-compose up
+```
+
+ * Build si une image n'a jamais été buildé.
+ * Démarre l'application.
+ * Suit les logs, comme `tail -f`.
+ * Si un des containers plante, arrête tous les processes.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose up -d
+```
+
+ * Comme `up`, mais en daemon.
+ * Ne suit pas les logs.
+ * Retourne au prompt.
+ * Utile pour faire un serveur de demo: ssh, up -d, exit.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose build
+```
+
+ * Build toutes les images.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose build web
+```
+
+ * Build seulement `web`.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose logs
+```
+
+ * Affiche les logs.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose logs web
+```
+
+ * Affiche les logs de `web` seulement.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose ps
+```
+
+ * Affiche le status.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose start
+```
+
+ * Démarre les containers.
+ * Ne suit pas les logs.
+ * Ne build pas les containers non-buildés.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose start web
+```
+
+ * Démarre `web`.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose stop
+```
+
+ * Arrête les containers.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose stop web
+```
+
+ * Arrête `web`.
+
+---
+
+class: middle
+
+```bash
+$ docker-compose run web bash
+```
+
+ * Exécute une commande dans le contexte d'un container.
+ * Dans l'exemple, exécute `bash` dans `web`.
+
+---
+
+# Mon Expérience
+
+ * Vraiment nécessaire, utilisez-le.
+ * Encore plus pratique si vous travaillez sur plusieurs projets.
+ * Un vieux projet archivé marche encore 1 an plus tard sans avoir à faire de setup.
+ * Quelques _cons_.
+
+---
+
+# _Cons_
+
+ * TODO
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
